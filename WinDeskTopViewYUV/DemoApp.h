@@ -13,26 +13,56 @@ private:
 
 public:
     DemoApp();
-    ~DemoApp();
+    virtual ~DemoApp();
 
     // Register the window class and call methods for instantiating drawing resources
-    HRESULT Initialize();
+    virtual HRESULT Initialize();
 
     // Process and dispatch messages
     void RunMessageLoop();
 
-private:
+protected:
+    void SetHWnd(HWND hwnd)
+    {
+        m_hwnd = hwnd;
+    }
+
+    HWND GetHWnd() const
+    {
+        return m_hwnd;
+    };
+
+    void SetFactory(ID2D1Factory* pFactory)
+    {
+        m_pDirect2dFactory = pFactory;
+    }
+
+    ID2D1Factory* GetFactory() const
+    {
+        return m_pDirect2dFactory;
+    }
+
+    void SetHwndRenderTarget(ID2D1HwndRenderTarget* pRenderTarget)
+    {
+        m_pRenderTarget = pRenderTarget;
+    }
+
+    ID2D1HwndRenderTarget* GetHwndRenderTarget() const
+    {
+        return m_pRenderTarget;
+    };
+
     // Initialize device-independent resources.
     HRESULT CreateDeviceIndependentResources();
 
     // Initialize device-dependent resources.
-    HRESULT CreateDeviceResources();
+    virtual HRESULT CreateDeviceResources();
 
     // Release device-dependent resource.
-    void DiscardDeviceResources();
+    virtual void DiscardDeviceResources();
 
     // Draw content.
-    HRESULT OnRender();
+    virtual HRESULT OnRender();
 
     // Resize the render target.
     void OnResize(

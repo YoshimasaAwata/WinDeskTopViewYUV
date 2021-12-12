@@ -3,7 +3,7 @@
 
 #include "framework.h"
 #include "WinDeskTopViewYUV.h"
-#include "DemoApp.h"
+#include "ShowYUV.h"
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -27,7 +27,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     if (SUCCEEDED(CoInitialize(NULL)))
     {
         {
-            DemoApp app;
+            ShowYUV app;
 
             if (SUCCEEDED(app.Initialize()))
             {

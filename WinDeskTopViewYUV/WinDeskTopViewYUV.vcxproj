@@ -142,11 +142,13 @@
     <ClInclude Include="DemoApp.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="ShowYUV.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="WinDeskTopViewYUV.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DemoApp.cpp" />
+    <ClCompile Include="ShowYUV.cpp" />
     <ClCompile Include="WinDeskTopViewYUV.cpp" />
   </ItemGroup>
   <ItemGroup>
