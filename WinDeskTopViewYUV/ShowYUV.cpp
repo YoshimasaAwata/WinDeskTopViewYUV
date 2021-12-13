@@ -2,6 +2,7 @@
 
 #include "ShowYUV.h"
 #include "Resource.h"
+#include <commdlg.h>
 
 ShowYUV::ShowYUV():
 	m_pInFile(NULL),
@@ -40,7 +41,7 @@ HRESULT ShowYUV::Initialize()
         // Register the window class.
         WNDCLASSEX wcex = { sizeof(WNDCLASSEX) };
         wcex.style = CS_HREDRAW | CS_VREDRAW;
-        wcex.lpfnWndProc = DemoApp::WndProc;
+        wcex.lpfnWndProc = ShowYUV::WndProc;
         wcex.cbClsExtra = 0;
         wcex.cbWndExtra = sizeof(LONG_PTR);
         wcex.hInstance = HINST_THISCOMPONENT;
@@ -109,10 +110,7 @@ HRESULT ShowYUV::CreateDeviceResources()
         if (SUCCEEDED(hr))
         {
             SetHwndRenderTarget(pRenderTarget);
-        }
 
-        if (SUCCEEDED(hr))
-        {
             // Create a bitmap.
             D2D1_BITMAP_PROPERTIES bitmapProperties;
             GetFactory()->GetDesktopDpi(&(bitmapProperties.dpiX), &(bitmapProperties.dpiY));
@@ -170,6 +168,97 @@ HRESULT ShowYUV::OnRender()
     return hr;
 }
 
+void ShowYUV::OpenYUVFile()
+{
+    OPENFILENAME ofn;
+    TCHAR file_name[MAX_PATH];
+
+    ZeroMemory(&ofn, sizeof(OPENFILENAME));
+    ZeroMemory(file_name, sizeof(TCHAR) * MAX_PATH);
+    ofn.lStructSize = sizeof(OPENFILENAME);
+    ofn.hwndOwner = GetHWnd();
+    ofn.lpstrFile = file_name;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.lpstrFilter = _T("YUVファイル(*.yuv)\0*.yuv\0\0");
+    ofn.lpstrTitle = _T("YUVファイルを選択します。");
+    ofn.Flags = OFN_FILEMUSTEXIST;
+    ofn.lpstrDefExt = _T("yuv");
+
+    if (GetOpenFileName(&ofn))
+    {
+        if (m_pInFile != NULL)
+        {
+            m_pInFile->close();
+            delete m_pInFile;
+            m_pInFile = NULL;
+        }
+        m_pInFile = new std::ifstream(file_name, std::ios_base::in | std::ios_base::binary);
+    }
+}
+
+LRESULT ShowYUV::ReadYUV()
+{
+    LRESULT result = 0;
+
+    if ((m_pInFile != NULL) && m_pInFile->good())
+    {
+        m_pInFile->read(reinterpret_cast<char*>(m_pY), CIF_WIDTH * CIF_HEIGHT);
+        m_pInFile->read(reinterpret_cast<char*>(m_pU), (CIF_WIDTH / 2) * (CIF_HEIGHT / 2));
+        m_pInFile->read(reinterpret_cast<char*>(m_pV), (CIF_WIDTH / 2) * (CIF_HEIGHT / 2));
+    }
+    else
+    {
+        result = -1;
+    }
+
+    return result;
+}
+
+void ShowYUV::YUV2RGB()
+{
+    auto clip = [](long n) { return (n <= 0) ? 0 : ((n >= 256) ? 255 : n); };
+
+    for (int h = 0; h < CIF_HEIGHT; h++)
+    {
+        int y_pos = h * CIF_WIDTH;
+        int uv_pos = (h / 2) * (CIF_WIDTH / 2);
+
+        for (int w = 0; w < CIF_WIDTH; w++)
+        {
+            double y16 = m_pY[y_pos + w] - 16.0;
+            double u128 = m_pU[uv_pos + (w / 2)] - 128.0;
+            double v128 = m_pV[uv_pos + (w / 2)] - 128.0;
+
+            long r = lrint((1.164 * y16) + (0.0 * u128) + (1.596 * v128));
+            long g = lrint((1.164 * y16) + (-0.392 * u128) + (-0.813 * v128));
+            long b = lrint((1.164 * y16) + (2.017 * u128) + (0.0 * v128));
+            r = clip(r);
+            g = clip(g);
+            b = clip(b);
+            m_pRGB[y_pos + w] = static_cast<UINT>((r << 16) | (g << 8) | b);
+        }
+    }
+
+    if ((NULL != GetFactory()) && (NULL != GetHwndRenderTarget()))
+    {
+        SafeRelease(&m_pBitmap);
+
+        D2D1_BITMAP_PROPERTIES bitmapProperties;
+        GetFactory()->GetDesktopDpi(&(bitmapProperties.dpiX), &(bitmapProperties.dpiY));
+        bitmapProperties.pixelFormat.format = DXGI_FORMAT_B8G8R8X8_UNORM;
+        bitmapProperties.pixelFormat.alphaMode = D2D1_ALPHA_MODE_IGNORE;
+        GetHwndRenderTarget()->CreateBitmap(
+            D2D1::SizeU(CIF_WIDTH, CIF_HEIGHT),
+            m_pRGB,
+            sizeof(UINT) * CIF_WIDTH,
+            &bitmapProperties,
+            &m_pBitmap
+        );
+    }
+
+    return;
+}
+
 LRESULT CALLBACK ShowYUV::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     LRESULT result = 0;
@@ -207,6 +296,13 @@ LRESULT CALLBACK ShowYUV::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM
                 // 選択されたメニューの解析:
                 switch (wmId)
                 {
+                case IDM_OPEN:
+                    pShowYUV->OpenYUVFile();
+                    pShowYUV->ReadYUV();
+                    pShowYUV->YUV2RGB();
+                    InvalidateRgn(hwnd, NULL, FALSE);
+                    UpdateWindow(hwnd);
+                    break;
                 case IDM_ABOUT:
                     DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_ABOUTBOX), hwnd, About);
                     break;
@@ -217,6 +313,8 @@ LRESULT CALLBACK ShowYUV::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM
                     return DefWindowProc(hwnd, message, wParam, lParam);
                 }
             }
+            result = 0;
+            wasHandled = true;
             break;
             case WM_SIZE:
             {

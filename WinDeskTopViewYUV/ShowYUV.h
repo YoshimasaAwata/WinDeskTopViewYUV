@@ -35,6 +35,15 @@ protected:
     // Draw content.
     virtual HRESULT OnRender();
 
+    // Open YUV File using FileOpenDialog.
+    virtual void OpenYUVFile();
+
+    // Read YUV data.
+    virtual LRESULT ReadYUV();
+
+    // Convert YUV to RGB and create Bitmap.
+    virtual void YUV2RGB();
+
     // The windows procedure.
     static LRESULT CALLBACK WndProc(
         HWND hWnd,
