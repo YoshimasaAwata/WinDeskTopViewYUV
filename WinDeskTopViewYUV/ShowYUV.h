@@ -9,6 +9,7 @@ class ShowYUV :
 public:
     static const int CIF_WIDTH = 352;
     static const int CIF_HEIGHT = 288;
+    static const UINT INTERVAL = 33;
 
 private:
     BYTE* m_pY;
@@ -43,6 +44,9 @@ protected:
 
     // Convert YUV to RGB and create Bitmap.
     virtual void YUV2RGB();
+
+    // Get next frame data and convert, show.
+    virtual LRESULT ShowNextFrame();
 
     // The windows procedure.
     static LRESULT CALLBACK WndProc(

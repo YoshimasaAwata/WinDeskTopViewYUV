@@ -11,6 +11,7 @@
 #define IDI_WINDESKTOPVIEWYUV           107
 #define IDI_SMALL                       108
 #define IDC_WINDESKTOPVIEWYUV           109
+#define IDT_TIMER                       110
 #define IDR_MAINFRAME                   128
 #define IDM_OPEN                        32771
 #define IDC_STATIC                      -1
@@ -23,6 +24,6 @@
 #define _APS_NEXT_RESOURCE_VALUE        129
 #define _APS_NEXT_COMMAND_VALUE         32772
 #define _APS_NEXT_CONTROL_VALUE         1000
-#define _APS_NEXT_SYMED_VALUE           110
+#define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif

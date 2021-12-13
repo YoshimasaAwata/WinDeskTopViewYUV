@@ -259,6 +259,24 @@ void ShowYUV::YUV2RGB()
     return;
 }
 
+LRESULT ShowYUV::ShowNextFrame()
+{
+    LRESULT result = 0;
+    result = ReadYUV();
+    if (0 == result)
+    {
+        YUV2RGB();
+        InvalidateRgn(GetHWnd(), NULL, FALSE);
+        UpdateWindow(GetHWnd());
+    }
+    else
+    {
+        KillTimer(GetHWnd(), IDT_TIMER);
+    }
+
+    return result;
+}
+
 LRESULT CALLBACK ShowYUV::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     LRESULT result = 0;
@@ -302,6 +320,7 @@ LRESULT CALLBACK ShowYUV::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM
                     pShowYUV->YUV2RGB();
                     InvalidateRgn(hwnd, NULL, FALSE);
                     UpdateWindow(hwnd);
+                    SetTimer(hwnd, IDT_TIMER, INTERVAL, NULL);
                     break;
                 case IDM_ABOUT:
                     DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_ABOUTBOX), hwnd, About);
@@ -312,6 +331,13 @@ LRESULT CALLBACK ShowYUV::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM
                 default:
                     return DefWindowProc(hwnd, message, wParam, lParam);
                 }
+            }
+            result = 0;
+            wasHandled = true;
+            break;
+            case WM_TIMER:
+            {
+                pShowYUV->ShowNextFrame();
             }
             result = 0;
             wasHandled = true;
