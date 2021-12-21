@@ -4,6 +4,8 @@
 #include "Resource.h"
 #include <commdlg.h>
 
+using namespace DirectX;
+
 ShowYUV::ShowYUV():
 	m_pInFile(NULL),
     m_pBitmap(NULL)
@@ -216,7 +218,7 @@ LRESULT ShowYUV::ReadYUV()
 
 void ShowYUV::YUV2RGB()
 {
-    auto clip = [](long n) { return (n <= 0) ? 0 : ((n >= 256) ? 255 : n); };
+    const XMVECTOR diff = { (16.0f / 256), (128.0f / 256), (128.0f / 256), 0.0f };
 
     for (int h = 0; h < CIF_HEIGHT; h++)
     {
@@ -225,17 +227,24 @@ void ShowYUV::YUV2RGB()
 
         for (int w = 0; w < CIF_WIDTH; w++)
         {
-            double y16 = m_pY[y_pos + w] - 16.0;
-            double u128 = m_pU[uv_pos + (w / 2)] - 128.0;
-            double v128 = m_pV[uv_pos + (w / 2)] - 128.0;
-
-            long r = lrint((1.164 * y16) + (0.0 * u128) + (1.596 * v128));
-            long g = lrint((1.164 * y16) + (-0.392 * u128) + (-0.813 * v128));
-            long b = lrint((1.164 * y16) + (2.017 * u128) + (0.0 * v128));
-            r = clip(r);
-            g = clip(g);
-            b = clip(b);
-            m_pRGB[y_pos + w] = static_cast<UINT>((r << 16) | (g << 8) | b);
+            XMVECTOR yuvw =
+            {
+                static_cast<float>(m_pY[y_pos + w]),
+                static_cast<float>(m_pU[uv_pos + (w / 2)]),
+                static_cast<float>(m_pV[uv_pos + (w / 2)]),
+                1.0f
+            };
+            yuvw /= 255.0f;
+            yuvw = XMVectorSaturate(yuvw);
+            yuvw -= diff;
+            XMVECTOR rgba = XMColorYUVToRGB(yuvw);
+            rgba = XMVectorSaturate(rgba);
+            rgba *= 255.0f;
+            rgba = XMVectorTruncate(rgba);
+            UINT r = static_cast<UINT>(XMVectorGetX(rgba));
+            UINT g = static_cast<UINT>(XMVectorGetY(rgba));
+            UINT b = static_cast<UINT>(XMVectorGetZ(rgba));
+            m_pRGB[y_pos + w] = (r << 16) | (g << 8) | b;
         }
     }
 
