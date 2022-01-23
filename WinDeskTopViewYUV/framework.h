@@ -19,6 +19,7 @@
 #include <d2d1helper.h>
 #include <dwrite.h>
 #include <wincodec.h>
+#include <DirectXMath.h>
 
 template<class Interface>
 inline void SafeRelease(
